@@ -19,6 +19,7 @@ load_dotenv()
 # Google Sheets Connection Details
 GOOGLE_SHEET_URL = os.getenv("STOCK_GOOGLE_SHEET_URL", "")
 GOOGLE_SHEET_TAB = "Money Control Stocks List"
+GOOGLE_SHEET_EVENTS_TAB = "Money Control Events"
 
 # ==========================================
 # Data Structure & Columns
@@ -91,3 +92,26 @@ ANALYST_SCORE_WEIGHTS = {
     'Sell': 0.0
 }
 ANALYST_CONFIDENCE_BUCKETS = {'high': 70, 'medium': 40}
+
+
+# ==========================================
+# Events Configuration
+# ==========================================
+# Event columns (for Money Control Events sheet)
+# Note: These will be converted to snake_case by data source
+EVENT_COLUMNS = [
+    "stock_name",
+    "event_type",
+    "announcement_date",
+    "ex_date",
+    "details",
+    "last_trade_price",
+    "description",
+    "url"
+]
+
+# Event filter columns
+EVENT_FILTER_COLUMNS = ["event_type", "notification_status"]
+
+# Event search columns
+EVENT_SEARCH_COLUMNS = ["stock_name", "sc_id"]

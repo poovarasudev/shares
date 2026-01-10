@@ -45,6 +45,7 @@ tracking company performance, and making informed investment decisions.
 |---------|-------------|
 | **Market Overview** | Browse and filter companies with advanced search and export capabilities |
 | **Company Details** | Detailed analysis including financials, metrics, and analyst ratings |
+| **Corporate Events** | Track upcoming stock splits, dividends, and bonus issues |
 
 ---
 

@@ -47,6 +47,20 @@ def init_data_sources():
             display_columns=const.TABLE_COLUMNS,
         )
         DataSourceRegistry.register("money_control", mc_source)
+        
+        # Money Control Events - Google Sheets
+        mc_events_source = create_google_sheets_source(
+            name="money_control_events",
+            sheet_url=const.GOOGLE_SHEET_URL,
+            sheet_tab=const.GOOGLE_SHEET_EVENTS_TAB,
+            json_columns=[],
+            numeric_columns=[],
+            filter_columns=const.EVENT_FILTER_COLUMNS,
+            search_columns=const.EVENT_SEARCH_COLUMNS,
+            display_columns=const.EVENT_COLUMNS,
+            derived_processors=NO_PROCESSORS,
+        )
+        DataSourceRegistry.register("money_control_events", mc_events_source)
     
     # TODO: Add more data sources here as needed
     # Example:

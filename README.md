@@ -55,6 +55,23 @@ A comprehensive Streamlit-based stock analysis application that aggregates data 
 - **Navigation**: Quick back button to market overview
 - **Deep Linking**: Shareable URLs for specific companies
 
+### 📅 Corporate Events
+- **Event Tracking**: Monitor upcoming stock splits, dividends, and bonus issues
+- **Smart Filtering**:
+  - Filter by event type (Splits, Dividend, Bonus)
+  - Date range filters (Today, This Week, This Month, Next 3 Months, Past)
+  - Search by stock name or SC ID
+  - Notification status filter
+- **Visual Dashboard**:
+  - Color-coded event cards by type
+  - Status badges showing days until event
+  - Price information with change indicators
+  - Detailed event descriptions
+- **Multiple Views**: Switch between Cards and Table view
+- **Date Intelligence**: Automatic calculation of days until event
+- **Pagination**: Navigate through large event lists (20 items per page)
+- **Data Export**: Download filtered events as CSV
+
 ### 🔌 Modular Data Sources
 - **Google Sheets Integration**: Public sheet CSV export with retry logic
 - **Extensible Architecture**: Easy addition of new sources
@@ -204,6 +221,11 @@ streamlit run app.py --server.address 0.0.0.0
    - Analyze strengths and seasonality
    - Review analyst ratings
    - Navigate back using the back button
+4. **Corporate Events**:
+   - Browse upcoming stock events (splits, dividends, bonus)
+   - Filter by event type, date range, or notification status
+   - Switch between Card and Table views
+   - Export events data for further analysis
 
 ### Keyboard Shortcuts
 
@@ -218,7 +240,8 @@ shares/
 │
 ├── pages/                          # Streamlit multipage structure
 │   ├── 1_📈_Market_Overview.py    # Stock list with filters & sorting
-│   └── 2_🏢_Company_Details.py    # Company detail view
+│   ├── 2_🏢_Company_Details.py    # Company detail view
+│   └── 3_📅_Events.py              # Corporate events dashboard
 │
 ├── data_sources/                   # Modular data source handlers
 │   ├── __init__.py                 # Module exports
