@@ -1,0 +1,75 @@
+"""
+Money Control Stock Analyzer - Main Entry Point.
+
+A Streamlit multipage application for analyzing stock data from
+various sources including Google Sheets, databases, and APIs.
+"""
+
+import streamlit as st
+from config import constants as const
+from data_sources import DataSourceRegistry, init_data_sources
+
+# ============================================
+# Page Configuration
+# ============================================
+st.set_page_config(
+    page_title="Stock Analysis",
+    page_icon="📊",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# ============================================
+# Initialize Data Sources
+# ============================================
+# Initialize all data sources at application startup
+init_data_sources()
+
+# ============================================
+# Main Page Content (Home)
+# ============================================
+st.markdown("# 👋 Welcome to Stock Analysis Dashboard")
+
+st.markdown("""
+### Your Comprehensive Stock Analysis Tool
+
+This application provides powerful tools for analyzing stock market data, 
+tracking company performance, and making informed investment decisions.
+
+**👈 Select a page from the sidebar** to get started!
+
+---
+
+### 📊 Available Features
+
+| Feature | Description |
+|---------|-------------|
+| **Market Overview** | Browse and filter companies with advanced search and export capabilities |
+| **Company Details** | Detailed analysis including financials, metrics, and analyst ratings |
+
+---
+
+### 🔜 Coming Soon
+
+- **Portfolio Tracker** - Track and monitor your investment portfolio
+- **Stock Screener** - Find stocks matching your investment criteria  
+- **Watchlist** - Keep an eye on your favorite stocks
+- **Real-time Data** - Live market data and price updates
+- **Technical Analysis** - Charts and technical indicators
+- **Comparison Tool** - Compare multiple stocks side-by-side
+
+---
+
+### 💡 Key Features
+
+✨ **Advanced Filtering** - Filter by sector, industry, PE ratio, analyst ratings and more  
+📊 **Visual Analytics** - Interactive cards and tables for easy data exploration  
+📈 **Financial Metrics** - M-Score, PE ratios, EPS, and comprehensive company metrics  
+📥 **Data Export** - Export filtered data to CSV for further analysis  
+🔍 **Smart Search** - Quickly find companies by name or ID
+
+""")
+
+# Footer
+st.markdown("---")
+st.caption("💡 **Tip:** Use the filters in the Market Overview page to narrow down companies based on your criteria. Data is cached for better performance.")
