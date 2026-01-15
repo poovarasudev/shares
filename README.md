@@ -31,13 +31,15 @@ A comprehensive Streamlit-based stock analysis application that aggregates data 
 - **Detailed Company Profiles**: 10+ financial metrics, strengths, and seasonality analysis.
 - **Corporate Events**: Track upcoming splits, dividends, and bonus issues.
 
-### 🔍 ScanX Trade Reports
-
-- **Advanced Market Screener**:
-  - **Comprehensive Data**: LTP, Change %, PE, P/B, Market Cap (Cr), and Sector metrics.
-  - **Valuation Analysis**: Custom calculations for PE vs Sector PE % and PB vs Sector PB %.
-  - **Power Filters**: Filter by Market Cap range, Current Ratio, and Analyst consensus.
 - **Interactive Details**: Sector comparison charts and analyst rating distributions.
+
+### 📦 Aionion Capital Reports
+
+- **Investment Baskets**:
+  - **Basket Value**: Calculated from LTP × Quantity (Rounded) for current market valuation.
+  - **Script Lists**: Simplified card views showing pipe-separated script summaries.
+  - **Active Status Filter**: Toggle between Active and Expired baskets based on validity dates.
+- **Dynamic Navigation**: Seamless transition between overview and basket details with session persistence.
 
 ### 🚀 Platform Highlights
 
@@ -45,10 +47,10 @@ A comprehensive Streamlit-based stock analysis application that aggregates data 
 - **Flexible Views**: Toggle between high-density **Table** and visual **Card** views.
 - **Valuation Highlighting**: Automatic color-coding for undervalued (🟢) and overvalued (🔴) stocks.
 - **Dual Sorting**: Choose any column and sort direction (↑/↓) independently.
-- **Optimized Caching**: 1-day (24h) cache TTL for stability, with manual refresh override.
+- **Optimized Caching**: Configurable cache TTL (defaulting to 1 day for Market data, 15m for Baskets).
 - **One-Click Export**: Download any report results as clean CSV files.
-- **Centralized Registry**: Manage multiple data sources from one place
-- **Smart Caching**: 15-minute TTL with manual refresh option
+- **Centralized Registry**: Manage multiple data sources from one place.
+- **JS-Driven Refresh**: Optimized filter resets using JavaScript for consistent UI state.
 
 ## 🏗 Architecture
 
@@ -155,6 +157,11 @@ DB_PASSWORD=password
 # API Configuration (Optional)
 API_BASE_URL=https://api.example.com
 API_KEY=your_api_key_here
+
+# Cache TTL overrides (Optional - in Days/Mins)
+MC_CACHE_TTL_DAYS=1
+SCANX_CACHE_TTL_DAYS=1
+AIONION_CACHE_TTL_MINS=15
 ```
 
 ### Application Settings

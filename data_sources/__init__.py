@@ -79,6 +79,22 @@ def init_data_sources():
         )
         DataSourceRegistry.register("scanx_trade", scanx_source)
 
+        # Aionion Capital Baskets Alerts - Google Sheets
+        aionion_source = create_google_sheets_source(
+            name="aionion_baskets",
+            sheet_url=const.GOOGLE_SHEET_URL,
+            sheet_tab=const.AIONION_SHEET_TAB,
+            json_columns=const.AIONION_JSON_COLUMNS,
+            numeric_columns=const.AIONION_NUMERIC_COLUMNS,
+            filter_columns=const.AIONION_FILTER_COLUMNS,
+            search_columns=const.AIONION_SEARCH_COLUMNS,
+            display_columns=const.AIONION_TABLE_COLUMNS,
+            id_column="BasketID",  # Aionion uses BasketID as the unique identifier
+            derived_processors=NO_PROCESSORS,  # No derived metrics for basket alerts
+            cache_ttl=const.AIONION_CACHE_TTL,  # 15 minutes
+        )
+        DataSourceRegistry.register("aionion_baskets", aionion_source)
+
     # TODO: Add more data sources here as needed
     # Example:
     # db_source = create_database_source(...)

@@ -6,6 +6,7 @@ sorting, and export functionality.
 """
 
 import streamlit as st
+from streamlit_js_eval import streamlit_js_eval
 import pandas as pd
 import re
 from datetime import datetime, timedelta
@@ -384,17 +385,13 @@ def main():
         )
 
         # Reset filters
-        if st.button("🔄 Reset Filters", key="reset_filters"):
-            st.session_state.search_events = ""
-            st.session_state.event_type_filter = []
-            st.session_state.date_range_filter = "This Month"
-            st.session_state.notification_filter = []
-            st.rerun()
+        if st.button("🔄 Reset Filters", key="reset_filters", width="stretch"):
+            streamlit_js_eval(js_expressions="parent.window.location.reload()")
 
         st.markdown("---")
 
         # Refresh data
-        if st.button("🔄 Refresh Data", key="refresh_events"):
+        if st.button("🔄 Refresh Data", key="refresh_events", width="stretch"):
             clear_source_cache("money_control_events")
             st.rerun()
 

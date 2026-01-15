@@ -53,6 +53,14 @@ tracking company performance, and making informed investment decisions.
 | **📊 Market Overview** | Advanced screener for ScanX companies with Market Cap and Sector PE/PB filters. |
 | **🏛️ Company Details** | Detailed company view with sector comparisons and analyst insights. |
 
+### 📦 Aionion Capital Reports
+| Feature | Description |
+|---------|-------------|
+| **📦 Baskets Overview** | Browse investment basket recommendations with real-time last traded price (LTP) calculations. |
+| **📊 Basket Details** | View all stocks in a basket with potential returns, target prices, and investment calculations. |
+
+> 💡 *Aionion recommendations use configurable caching (default 15 mins) for balanced performance and accuracy.*
+
 ---
 
 ### 🔜 Coming Soon

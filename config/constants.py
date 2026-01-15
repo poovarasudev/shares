@@ -22,9 +22,10 @@ GOOGLE_SHEET_TAB = "Money Control Stocks List"
 GOOGLE_SHEET_EVENTS_TAB = "Money Control Events"
 
 # Cache TTL settings (in seconds)
-# 1 day = 24 * 60 * 60 = 86400
-MC_CACHE_TTL = 86400
-SCANX_CACHE_TTL = 86400
+# Defaults: MC (1 day), SCANX (1 day), AIONION (15 mins)
+MC_CACHE_TTL = int(os.getenv("MC_CACHE_TTL_DAYS", "1")) * 86400
+SCANX_CACHE_TTL = int(os.getenv("SCANX_CACHE_TTL_DAYS", "1")) * 86400
+AIONION_CACHE_TTL = int(os.getenv("AIONION_CACHE_TTL_MINS", "15")) * 60
 
 # ==========================================
 # Data Structure & Columns
@@ -165,3 +166,48 @@ SCANX_FILTER_COLUMNS = ["sector", "sub_sector", "status"]
 
 # ScanX search columns
 SCANX_SEARCH_COLUMNS = ["disp_sym", "sym", "sid"]
+
+
+# ==========================================
+# Aionion Capital Baskets Alerts Configuration
+# ==========================================
+AIONION_SHEET_TAB = "Aionion Capital Baskets Alerts"
+
+# Aionion columns for display in basket list
+AIONION_TABLE_COLUMNS = [
+    "BasketName",
+    "CategoryName",
+    "BasketCategory",
+    "InvestmentType",
+    "InvestmentStrategy",
+    "AmountRange",
+    "StatusDescreption",
+    "Status",
+    "Validity",
+    "InsertionTime",
+]
+
+# Aionion numeric columns
+AIONION_NUMERIC_COLUMNS = [
+    "basket_id",
+    "basket_call_entry_id",
+    "category_id",
+    "user_id",
+    "is_active",
+]
+
+# Aionion JSON columns - BasketScrips contains stock details
+AIONION_JSON_COLUMNS = ["basket_scrips"]
+
+# Aionion filter columns
+AIONION_FILTER_COLUMNS = [
+    "category_name",
+    "basket_category",
+    "investment_type",
+    "investment_strategy",
+    "amount_range",
+    "status",
+]
+
+# Aionion search columns
+AIONION_SEARCH_COLUMNS = ["basket_name", "basket_id", "header"]
