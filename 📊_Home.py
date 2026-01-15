@@ -7,6 +7,7 @@ various sources including Google Sheets, databases, and APIs.
 
 import streamlit as st
 from data_sources import init_data_sources
+from utils.ui_components import apply_custom_css
 
 # ============================================
 # Page Configuration
@@ -17,6 +18,9 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 )
+
+# Apply custom CSS
+apply_custom_css()
 
 # ============================================
 # Initialize Data Sources

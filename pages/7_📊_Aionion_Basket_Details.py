@@ -13,6 +13,7 @@ from typing import List, Dict, Optional
 
 from data_sources import DataSourceRegistry, ensure_data_source
 from data_sources.registry import load_cached_data
+from utils.ui_components import apply_custom_css
 
 # ============================================
 # Page Configuration
@@ -20,6 +21,9 @@ from data_sources.registry import load_cached_data
 st.set_page_config(
     page_title="Basket Details - Aionion Capital", page_icon="📊", layout="wide"
 )
+
+# Apply custom CSS
+apply_custom_css()
 
 # ============================================
 # Constants

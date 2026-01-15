@@ -11,6 +11,7 @@ import json
 from typing import Any, Optional
 
 from data_sources.registry import DataSourceRegistry, load_cached_data
+from utils.ui_components import apply_custom_css
 
 # ============================================
 # Page Configuration
@@ -18,6 +19,9 @@ from data_sources.registry import DataSourceRegistry, load_cached_data
 st.set_page_config(
     page_title="Money Control Company Details", page_icon="🏢", layout="wide"
 )
+
+# Apply custom CSS
+apply_custom_css()
 
 
 # ============================================

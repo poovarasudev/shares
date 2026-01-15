@@ -16,11 +16,15 @@ from typing import List, Tuple, Dict
 
 from data_sources import DataSourceRegistry, ensure_data_source
 from data_sources.registry import load_cached_data, clear_source_cache
+from utils.ui_components import apply_custom_css
 
 # ============================================
 # Page Configuration
 # ============================================
 st.set_page_config(page_title="Aionion Capital Baskets", page_icon="📦", layout="wide")
+
+# Apply custom CSS
+apply_custom_css()
 
 # ============================================
 # Constants
