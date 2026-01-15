@@ -15,7 +15,7 @@ st.set_page_config(
     page_title="Stock Analysis",
     page_icon="📊",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
 )
 
 # ============================================
@@ -29,7 +29,8 @@ init_data_sources()
 # ============================================
 st.markdown("# 👋 Welcome to Stock Analysis Dashboard")
 
-st.markdown("""
+st.markdown(
+    """
 ### Your Comprehensive Stock Analysis Tool
 
 This application provides powerful tools for analyzing stock market data, 
@@ -43,9 +44,11 @@ tracking company performance, and making informed investment decisions.
 
 | Feature | Description |
 |---------|-------------|
-| **Market Overview** | Browse and filter companies with advanced search and export capabilities |
-| **Company Details** | Detailed analysis including financials, metrics, and analyst ratings |
-| **Corporate Events** | Track upcoming stock splits, dividends, and bonus issues |
+| **MC Market Overview** | Browse and filter Money Control companies with advanced search and export capabilities |
+| **MC Company Details** | Detailed analysis including financials, metrics, and analyst ratings from Money Control |
+| **MC Corporate Events** | Track upcoming stock splits, dividends, and bonus issues from Money Control |
+| **ScanX Market Overview** | Browse and filter ScanX Trade companies with market cap, PE, and sector filters |
+| **ScanX Company Details** | Detailed company view with sector comparisons and analyst ratings from ScanX Trade |
 
 ---
 
@@ -68,8 +71,11 @@ tracking company performance, and making informed investment decisions.
 📥 **Data Export** - Export filtered data to CSV for further analysis  
 🔍 **Smart Search** - Quickly find companies by name or ID
 
-""")
+"""
+)
 
 # Footer
 st.markdown("---")
-st.caption("💡 **Tip:** Use the filters in the Market Overview page to narrow down companies based on your criteria. Data is cached for better performance.")
+st.caption(
+    "💡 **Tip:** Use the filters in the Market Overview page to narrow down companies based on your criteria. Data is cached for better performance."
+)

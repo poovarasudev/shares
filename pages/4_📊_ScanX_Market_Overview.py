@@ -1,7 +1,7 @@
 """
-Market Overview Page.
+ScanX Trade Market Overview Page.
 
-Displays a comprehensive list of stocks with filtering, sorting,
+Displays a comprehensive list of stocks from ScanX Trade with filtering, sorting,
 column visibility controls, and export functionality.
 """
 
@@ -19,7 +19,7 @@ from data_sources.registry import load_cached_data, clear_source_cache
 # Page Configuration
 # ============================================
 st.set_page_config(
-    page_title="Money Control Market Overview", page_icon="📈", layout="wide"
+    page_title="ScanX Trade Market Overview", page_icon="📊", layout="wide"
 )
 
 # ============================================
@@ -27,38 +27,35 @@ st.set_page_config(
 # ============================================
 ITEMS_PER_PAGE = 15
 CARDS_PER_ROW = 3
+DATA_SOURCE_NAME = "scanx_trade"
 
 # Column definitions: (display_name, column_key, is_visible_by_default, width)
 COLUMN_DEFINITIONS = [
-    ("Company Name", "company_name", True, "medium"),
+    ("Company", "disp_sym", True, "medium"),
     ("Sector", "sector", True, "medium"),
-    ("Industry", "industry", True, "medium"),
-    ("Cost (₹)", "cost", True, "small"),
-    ("M-Score", "m_score", True, "small"),
-    ("TTM EPS", "ttm_eps", True, "small"),
-    ("TTM PE", "ttm_pe", True, "small"),
-    ("P/B", "p/b", True, "small"),
-    ("Sector PE", "sector_pe", True, "small"),
+    ("Sub-Sector", "sub_sector", True, "medium"),
+    ("LTP (₹)", "ltp", True, "small"),
+    ("PE", "pe", True, "small"),
+    ("P/B", "pb", True, "small"),
+    ("Sector PE", "ind__pe", True, "small"),
+    ("Sector P/B", "ind__pb", True, "small"),
+    ("Sector EPS", "ind__eps", True, "small"),
     ("PE vs Sec %", "pe_vs_sector_pct", True, "small"),
+    ("PB vs Sec %", "pb_vs_sector_pct", True, "small"),
+    ("PE/Sec PE", "pe_sec_pe_ratio", True, "small"),
+    ("EPS (Yearly)", "yearly_earning_per_share", True, "small"),
+    ("Current Ratio", "current_rto", True, "small"),
     ("Analyst Rating", "analyst_final_rating", True, "small"),
-    ("Analyst Count", "analyst_count", True, "small"),
-    ("Analyst Confidence", "analyst_confidence", True, "small"),
+    ("Analyst Count", "total_analyst_count", True, "small"),
+    ("M-Cap (Cr)", "mcap", True, "small"),
     ("Status", "status", True, "small"),
-    ("MC Url", "company_url", True, "small"),
+    ("ScanX Url", "url", True, "small"),
 ]
 
 
 # ============================================
 # Helper Functions
 # ============================================
-def _to_snake(s: str) -> str:
-    """Convert string to snake_case."""
-    s = str(s).strip()
-    s1 = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", s)
-    s2 = re.sub("([a-z0-9])([A-Z])", r"\1_\2", s1).lower().replace(" ", "_")
-    return s2.replace("__", "_")
-
-
 def _format_metric(value) -> str:
     """Format metric value for display."""
     if value is None or pd.isna(value):
@@ -71,7 +68,23 @@ def _format_metric(value) -> str:
     return val_str if val_str not in ["nan", "None", ""] else "-"
 
 
-def _format_pe_with_highlight(ttm_pe, sector_pe, pe_vs_sector_pct) -> Tuple[str, str]:
+def _format_mcap(value) -> str:
+    """Format market cap value for display."""
+    if value is None or pd.isna(value):
+        return "-"
+    try:
+        mcap = float(value)
+        if mcap >= 100000:
+            return f"₹{mcap/100000:.2f}L Cr"
+        elif mcap >= 1000:
+            return f"₹{mcap/1000:.2f}K Cr"
+        else:
+            return f"₹{mcap:.2f} Cr"
+    except (ValueError, TypeError):
+        return "-"
+
+
+def _format_pe_with_highlight(pe, sector_pe) -> Tuple[str, str]:
     """
     Format PE value with color highlighting based on comparison with sector PE.
 
@@ -81,17 +94,19 @@ def _format_pe_with_highlight(ttm_pe, sector_pe, pe_vs_sector_pct) -> Tuple[str,
         - Red: PE significantly above sector (overvalued)
         - Default: PE within normal range
     """
-    if ttm_pe is None or pd.isna(ttm_pe):
+    if pe is None or pd.isna(pe):
         return "-", "#9ca3af"  # gray for missing
 
-    formatted = f"{float(ttm_pe):.2f}"
+    formatted = f"{float(pe):.2f}"
 
-    # Check pe_vs_sector_pct for highlighting
-    if pe_vs_sector_pct is not None and not pd.isna(pe_vs_sector_pct):
-        pct = float(pe_vs_sector_pct)
-        if pct <= -20:  # 20% cheaper than sector
+    if sector_pe is not None and not pd.isna(sector_pe) and float(sector_pe) > 0:
+        pe_val = float(pe)
+        sector_val = float(sector_pe)
+        ratio = (pe_val - sector_val) / sector_val * 100
+
+        if ratio <= -20:  # 20% cheaper than sector
             return formatted, "#22c55e"  # green - undervalued
-        elif pct >= 20:  # 20% more expensive than sector
+        elif ratio >= 20:  # 20% more expensive than sector
             return formatted, "#ef4444"  # red - overvalued
 
     return formatted, "#f59e0b"  # amber - neutral/fair
@@ -99,12 +114,12 @@ def _format_pe_with_highlight(ttm_pe, sector_pe, pe_vs_sector_pct) -> Tuple[str,
 
 def _init_session_state():
     """Initialize session state variables."""
-    if "current_page" not in st.session_state:
-        st.session_state.current_page = 1
+    if "scanx_current_page" not in st.session_state:
+        st.session_state.scanx_current_page = 1
 
     # Always update visible columns to match COLUMN_DEFINITIONS
     # This ensures changes to default visibility are immediately reflected
-    st.session_state.visible_columns = [
+    st.session_state.scanx_visible_columns = [
         col_key for _, col_key, visible, _ in COLUMN_DEFINITIONS if visible
     ]
 
@@ -117,26 +132,37 @@ def _get_column_config(visible_columns: List[str]) -> Dict:
         if col_key not in visible_columns:
             continue
 
-        if col_key == "company_url":
+        if col_key == "url":
             config[col_key] = st.column_config.LinkColumn(
-                display_name, help="Click to open in MoneyControl", display_text="View"
+                display_name, help="Click to open in ScanX Trade", display_text="View"
             )
-        elif col_key == "cost":
+        elif col_key == "ltp":
             config[col_key] = st.column_config.NumberColumn(
                 display_name, format="₹%.2f"
             )
+        elif col_key == "mcap":
+            config[col_key] = st.column_config.NumberColumn(display_name, format="%.2f")
         elif col_key in [
-            "m_score",
-            "ttm_eps",
-            "ttm_pe",
-            "p/b",
-            "sector_pe",
+            "pe",
+            "pb",
+            "ind__pe",
+            "ind__pb",
+            "ind__eps",
+            "yearly_earning_per_share",
         ]:
             config[col_key] = st.column_config.NumberColumn(display_name, format="%.2f")
-        elif col_key == "pe_vs_sector_pct":
+        elif col_key == "pchange":
             config[col_key] = st.column_config.NumberColumn(
                 display_name, format="%.2f%%"
             )
+        elif col_key in ["pe_vs_sector_pct", "pb_vs_sector_pct"]:
+            config[col_key] = st.column_config.NumberColumn(
+                display_name, format="%.2f%%"
+            )
+        elif col_key == "pe_sec_pe_ratio":
+            config[col_key] = st.column_config.NumberColumn(display_name, format="%.2f")
+        elif col_key == "current_rto":
+            config[col_key] = st.column_config.NumberColumn(display_name, format="%.2f")
         else:
             config[col_key] = st.column_config.Column(display_name)
 
@@ -158,7 +184,9 @@ def render_filters(df: pd.DataFrame) -> tuple[pd.DataFrame, int, int]:
     # --- Text Search ---
     search_query = (
         st.sidebar.text_input(
-            "Search Company", placeholder="e.g. Reliance, TCS...", key="search_input"
+            "Search Company",
+            placeholder="e.g. Reliance, TCS...",
+            key="scanx_search_input",
         )
         .strip()
         .lower()
@@ -166,38 +194,37 @@ def render_filters(df: pd.DataFrame) -> tuple[pd.DataFrame, int, int]:
 
     if search_query:
         mask_name = (
-            filtered_df["company_name"]
+            filtered_df["disp_sym"]
             .astype(str)
             .str.lower()
             .str.contains(search_query, na=False)
         )
-        mask_scid = (
-            filtered_df["scId"]
+        mask_sym = (
+            filtered_df["sym"]
             .astype(str)
             .str.lower()
             .str.contains(search_query, na=False)
         )
-        filtered_df = filtered_df[mask_name | mask_scid]
+        filtered_df = filtered_df[mask_name | mask_sym]
 
     # --- Category Filters ---
     def apply_multiselect(column_name: str, label: str, default_values: list = None):
         nonlocal filtered_df
         if column_name in df.columns:
             options = sorted(df[column_name].dropna().astype(str).unique().tolist())
-            # Set default value for status filter
             default = (
                 default_values
                 if default_values and all(v in options for v in default_values)
                 else []
             )
             selected = st.sidebar.multiselect(
-                label, options, default=default, key=f"filter_{column_name}"
+                label, options, default=default, key=f"scanx_filter_{column_name}"
             )
             if selected:
                 filtered_df = filtered_df[filtered_df[column_name].isin(selected)]
 
     apply_multiselect("sector", "Sector")
-    apply_multiselect("industry", "Industry")
+    apply_multiselect("sub_sector", "Sub-Sector")
     apply_multiselect("analyst_final_rating", "Analyst Rating")
 
     # Helper for range filters
@@ -210,7 +237,7 @@ def render_filters(df: pd.DataFrame) -> tuple[pd.DataFrame, int, int]:
     ):
         nonlocal filtered_df
         if column_name in df.columns:
-            if st.sidebar.checkbox(f"Filter by {label}", key=f"mc_cb_{column_name}"):
+            if st.sidebar.checkbox(f"Filter by {label}", key=f"scanx_cb_{column_name}"):
                 values = df[column_name].dropna()
                 if not values.empty:
                     actual_min = float(values.min())
@@ -228,62 +255,81 @@ def render_filters(df: pd.DataFrame) -> tuple[pd.DataFrame, int, int]:
                             max_value=high,
                             value=(low, high),
                             step=step,
-                            key=f"mc_slider_{column_name}",
+                            key=f"scanx_slider_{column_name}",
                         )
                         filtered_df = filtered_df[
                             (filtered_df[column_name] >= selected_range[0])
                             & (filtered_df[column_name] <= selected_range[1])
                         ]
 
-    # M-Score filter
-    apply_range_filter("m_score", "M-Score", min_val=0.0, max_val=100.0)
-
-    # PE Ratio
-    apply_range_filter("ttm_pe", "PE Ratio", min_val=0.0, max_val=500.0)
-
-    # PB Ratio
-    apply_range_filter("p/b", "PB Ratio", min_val=0.0, max_val=50.0)
-
-    # Sector PE
-    apply_range_filter("sector_pe", "Sector PE", min_val=0.0, max_val=200.0)
-
-    # PE vs Sector %
-    apply_range_filter("pe_vs_sector_pct", "PE vs Sec %", min_val=-100.0, max_val=500.0)
-
-    # Analyst Count range filter
-    if "analyst_count" in df.columns and st.sidebar.checkbox(
-        "Filter by Analyst Count", key="filter_analyst_count_cb"
+    # Apply existing filters using helper or original logic
+    # Analyst Count
+    if "total_analyst_count" in df.columns and st.sidebar.checkbox(
+        "Filter by Analyst Count", key="scanx_filter_analyst_count_cb"
     ):
-        analyst_values = df["analyst_count"].dropna()
-        if len(analyst_values) > 0:
-            count_min = int(analyst_values.min())
-            count_max = int(analyst_values.max())
+        analyst_values = df["total_analyst_count"].dropna()
+        if not analyst_values.empty:
+            count_min, count_max = int(analyst_values.min()), int(analyst_values.max())
             if count_min < count_max:
                 selected_count_range = st.sidebar.slider(
                     "Analyst Count Range",
-                    min_value=count_min,
-                    max_value=count_max,
-                    value=(count_min, count_max),
-                    key="filter_analyst_count_range",
+                    count_min,
+                    count_max,
+                    (count_min, count_max),
+                    key="scanx_filter_analyst_count_range",
                 )
                 filtered_df = filtered_df[
-                    (filtered_df["analyst_count"] >= selected_count_range[0])
-                    & (filtered_df["analyst_count"] <= selected_count_range[1])
+                    filtered_df["total_analyst_count"].between(*selected_count_range)
                 ]
+
+    # PE Ratio
+    apply_range_filter("pe", "PE Ratio", min_val=0.0, max_val=500.0)
+
+    # PB Ratio
+    apply_range_filter("pb", "PB Ratio", min_val=0.0, max_val=50.0)
+
+    # Sector PE
+    apply_range_filter("ind__pe", "Sector PE", min_val=0.0, max_val=200.0)
+
+    # Sector PB
+    apply_range_filter("ind__pb", "Sector PB", min_val=0.0, max_val=20.0)
+
+    # PE vs Sector PE %
+    apply_range_filter("pe_vs_sector_pct", "PE vs Sec %", min_val=-100.0, max_val=500.0)
+
+    # PB vs Sector PB %
+    apply_range_filter("pb_vs_sector_pct", "PB vs Sec %", min_val=-100.0, max_val=500.0)
+
+    # Current Ratio
+    apply_range_filter("current_rto", "Current Ratio", min_val=0.0, max_val=20.0)
+
+    # Market Cap
+    if "mcap" in df.columns and st.sidebar.checkbox(
+        "Filter by Market Cap", key="scanx_filter_mcap_cb"
+    ):
+        mcap_values = df["mcap"].dropna()
+        if not mcap_values.empty:
+            mcap_min, mcap_max = float(mcap_values.min()), float(mcap_values.max())
+            selected_mcap = st.sidebar.slider(
+                "Market Cap Range (Cr)",
+                mcap_min,
+                mcap_max,
+                (mcap_min, mcap_max),
+                key="scanx_filter_mcap_range",
+            )
+            filtered_df = filtered_df[filtered_df["mcap"].between(*selected_mcap)]
 
     apply_multiselect("status", "Status", default_values=["Synced"])
 
     # --- Filter Actions ---
-
     col1, col2 = st.sidebar.columns(2)
     with col1:
-        if st.button("🔄 Refresh", width="stretch", key="refresh_data"):
-            clear_source_cache("money_control")
+        if st.button("🔄 Refresh", width="stretch", key="scanx_refresh_data"):
+            clear_source_cache(DATA_SOURCE_NAME)
             st.rerun()
 
     with col2:
-        # Hard reload the page to clear all filters
-        if st.button("✖️ Clear", width="stretch", key="clear_filters"):
+        if st.button("✖️ Clear", width="stretch", key="scanx_clear_filters"):
             streamlit_js_eval(js_expressions="parent.window.location.reload()")
 
     # Return filtered data with counts
@@ -300,35 +346,37 @@ def render_pagination(total_items: int, items_per_page: int) -> Tuple[int, int]:
     """Render pagination controls and return start/end indices."""
     total_pages = max(1, (total_items + items_per_page - 1) // items_per_page)
 
-    if st.session_state.current_page > total_pages:
-        st.session_state.current_page = 1
+    if st.session_state.scanx_current_page > total_pages:
+        st.session_state.scanx_current_page = 1
 
     col1, col2, col3, col4, col5 = st.columns([1, 1, 2, 1, 1])
 
     with col1:
         if st.button(
             "⏮️",
-            disabled=st.session_state.current_page == 1,
+            disabled=st.session_state.scanx_current_page == 1,
             width="stretch",
             help="First page",
+            key="scanx_first_page",
         ):
-            st.session_state.current_page = 1
+            st.session_state.scanx_current_page = 1
             st.rerun()
 
     with col2:
         if st.button(
             "◀️",
-            disabled=st.session_state.current_page == 1,
+            disabled=st.session_state.scanx_current_page == 1,
             width="stretch",
             help="Previous page",
+            key="scanx_prev_page",
         ):
-            st.session_state.current_page -= 1
+            st.session_state.scanx_current_page -= 1
             st.rerun()
 
     with col3:
         st.markdown(
             f"<div style='text-align:center; padding:8px;'>"
-            f"Page <b>{st.session_state.current_page}</b> of <b>{total_pages}</b>"
+            f"Page <b>{st.session_state.scanx_current_page}</b> of <b>{total_pages}</b>"
             f"</div>",
             unsafe_allow_html=True,
         )
@@ -336,24 +384,26 @@ def render_pagination(total_items: int, items_per_page: int) -> Tuple[int, int]:
     with col4:
         if st.button(
             "▶️",
-            disabled=st.session_state.current_page == total_pages,
+            disabled=st.session_state.scanx_current_page == total_pages,
             width="stretch",
             help="Next page",
+            key="scanx_next_page",
         ):
-            st.session_state.current_page += 1
+            st.session_state.scanx_current_page += 1
             st.rerun()
 
     with col5:
         if st.button(
             "⏭️",
-            disabled=st.session_state.current_page == total_pages,
+            disabled=st.session_state.scanx_current_page == total_pages,
             width="stretch",
             help="Last page",
+            key="scanx_last_page",
         ):
-            st.session_state.current_page = total_pages
+            st.session_state.scanx_current_page = total_pages
             st.rerun()
 
-    start_idx = (st.session_state.current_page - 1) * items_per_page
+    start_idx = (st.session_state.scanx_current_page - 1) * items_per_page
     end_idx = min(start_idx + items_per_page, total_items)
 
     return start_idx, end_idx
@@ -364,7 +414,7 @@ def render_pagination(total_items: int, items_per_page: int) -> Tuple[int, int]:
 # ============================================
 def render_table_view(df: pd.DataFrame):
     """Render data table with configurable columns."""
-    visible_cols = st.session_state.visible_columns
+    visible_cols = st.session_state.scanx_visible_columns
 
     # Filter to only existing columns
     existing_cols = [col for col in visible_cols if col in df.columns]
@@ -373,9 +423,9 @@ def render_table_view(df: pd.DataFrame):
         st.warning("No columns selected. Please select at least one column.")
         return
 
-    # Always include scId for navigation
-    if "scId" not in existing_cols and "scId" in df.columns:
-        display_cols = existing_cols + ["scId"]
+    # Always include sid for navigation
+    if "sid" not in existing_cols and "sid" in df.columns:
+        display_cols = existing_cols + ["sid"]
     else:
         display_cols = existing_cols
 
@@ -388,9 +438,9 @@ def render_table_view(df: pd.DataFrame):
     )
 
     # Add action links
-    if "scId" in display_df.columns:
-        display_df["_action"] = display_df["scId"].apply(
-            lambda x: f"/Money_Control_Company_Details?sc_id={x}" if pd.notna(x) else ""
+    if "sid" in display_df.columns:
+        display_df["_action"] = display_df["sid"].apply(
+            lambda x: f"/ScanX_Company_Details?sid={x}" if pd.notna(x) else ""
         )
         existing_cols.append("_action")
 
@@ -414,22 +464,18 @@ def render_card_view(df: pd.DataFrame):
         st.info("🗭 No companies match your filters.")
         return
 
-    # Sort controls (only in card view)
+    # Sort controls
     sort_column_map = {
-        "Company Name": "company_name",
-        "M-Score": "m_score",
-        "Cost": "cost",
-        "PE vs Sector %": "pe_vs_sector_pct",
-        "TTM PE": "ttm_pe",
-        "TTM EPS": "ttm_eps",
-        "P/B": "p_b",
-        "Analyst Confidence": "analyst_confidence_score",
+        "Company Name": "disp_sym",
+        "LTP": "ltp",
+        "PE": "pe",
+        "P/B": "pb",
+        "Market Cap": "mcap",
+        "Change %": "pchange",
         "Analyst Rating": "analyst_final_rating",
-        "Analyst Count": "analyst_count",
-        "Sector PE": "sector_pe",
-        "Price Change": "price_up_down_value",
+        "Analyst Count": "total_analyst_count",
         "Sector": "sector",
-        "Industry": "industry",
+        "Sub-Sector": "sub_sector",
     }
 
     sort_col1, sort_col2 = st.columns([2, 0.8])
@@ -440,7 +486,7 @@ def render_card_view(df: pd.DataFrame):
             list(sort_column_map.keys()),
             index=0,
             label_visibility="collapsed",
-            key="card_sort_column",
+            key="scanx_card_sort_column",
         )
 
     with sort_col2:
@@ -449,12 +495,12 @@ def render_card_view(df: pd.DataFrame):
             ["↑ Asc", "↓ Desc"],
             index=0,
             label_visibility="collapsed",
-            key="card_sort_direction",
+            key="scanx_card_sort_direction",
         )
 
     # Apply sorting
-    sort_col = sort_column_map.get(sort_column_display, "company_name")
-    ascending = "↑" in sort_direction  # Check for up arrow
+    sort_col = sort_column_map.get(sort_column_display, "disp_sym")
+    ascending = "↑" in sort_direction
     if sort_col in df.columns:
         df = df.sort_values(by=sort_col, ascending=ascending, na_position="last")
 
@@ -479,18 +525,18 @@ def render_card_view(df: pd.DataFrame):
 
     for row_items in rows:
         cols = st.columns(CARDS_PER_ROW)
-        for col_idx, (row_data, global_idx) in enumerate(row_items):
+        for col_idx, (row_data, _) in enumerate(row_items):
             with cols[col_idx]:
-                _render_company_card(row_data, global_idx)
+                _render_company_card(row_data)
 
 
-def _render_company_card(row: pd.Series, index: int):
+def _render_company_card(row: pd.Series):
     """Render a single company card."""
     with st.container(border=True):
         # Header
         c1, c2 = st.columns([0.7, 0.3])
         c1.markdown(
-            f"<h4 style='margin:0; padding:0;'>{row.get('company_name', 'Unknown')}</h4>",
+            f"<h4 style='margin:0; padding:0;'>{row.get('disp_sym', 'Unknown')}</h4>",
             unsafe_allow_html=True,
         )
 
@@ -501,55 +547,51 @@ def _render_company_card(row: pd.Series, index: int):
             unsafe_allow_html=True,
         )
 
+        # Symbol
+        sym = row.get("sym", "")
+        if sym:
+            st.markdown(
+                f"<p style='margin:0; font-size:0.7rem; color:#6b7280;'>📌 {sym}</p>",
+                unsafe_allow_html=True,
+            )
+
         # Metadata
         sector = row.get("sector", "N/A") or "N/A"
-        industry = row.get("industry", "N/A") or "N/A"
+        sub_sector = row.get("sub_sector", "N/A") or "N/A"
         st.markdown(
-            f"<p style='margin:2px 0; font-size:0.8rem;'>📁 {sector} • {industry}</p>",
+            f"<p style='margin:2px 0; font-size:0.8rem;'>📁 {sector} • {sub_sector}</p>",
             unsafe_allow_html=True,
         )
 
         # Price
-        cost = row.get("cost")
-        price_change_key = row.get("price_up_down_key", "")
-        price_change_value = row.get("price_up_down_value", "")
+        ltp = row.get("ltp")
+        pchange = row.get("pchange")
 
-        if cost and str(cost) not in ["-", "None", "nan"]:
-            price_color = "#ef4444" if price_change_key == "Red" else "#22c55e"
+        if ltp and str(ltp) not in ["-", "None", "nan"]:
+            # Determine price color based on change
+            if pchange is not None and not pd.isna(pchange):
+                price_color = "#ef4444" if float(pchange) < 0 else "#22c55e"
+            else:
+                price_color = "#22c55e"
+
             st.markdown(
-                f"<h3 style='color:{price_color}; margin:4px 0;'>₹{cost}</h3>",
+                f"<h3 style='color:{price_color}; margin:4px 0;'>₹{ltp}</h3>",
                 unsafe_allow_html=True,
             )
-            if price_change_value:
-                change_icon = "📉" if price_change_key == "Red" else "📈"
+
+            if pchange is not None and not pd.isna(pchange):
+                change_val = float(pchange)
+                change_icon = "📉" if change_val < 0 else "📈"
                 st.markdown(
-                    f"<p style='margin:0; font-size:0.75rem;'>{change_icon} {price_change_value}</p>",
+                    f"<p style='margin:0; font-size:0.75rem;'>{change_icon} {change_val:.2f}%</p>",
                     unsafe_allow_html=True,
                 )
-            # PE vs Sector and Analyst confidence with highlighting
-            pe_pct = row.get("pe_vs_sector_pct")
-            analyst_conf = row.get("analyst_confidence")
 
-            pe_line = None
-            if pe_pct is not None and not pd.isna(pe_pct):
-                pct_val = float(pe_pct)
-                if pct_val <= -20:
-                    pe_color = "#22c55e"  # green - cheap
-                    pe_icon = "🟢"
-                elif pct_val >= 20:
-                    pe_color = "#ef4444"  # red - expensive
-                    pe_icon = "🔴"
-                else:
-                    pe_color = "#f59e0b"  # amber - fair
-                    pe_icon = "🟡"
-                pe_line = f"<span style='color:{pe_color};'>{pe_icon} PE vs Sector: {pct_val:.1f}%</span>"
-
-            conf_line = f"Analyst: {analyst_conf}" if analyst_conf else None
-            if pe_line or conf_line:
-                parts = [x for x in [pe_line, conf_line] if x]
-                extras = " • ".join(parts)
+            # Market Cap
+            mcap = row.get("mcap")
+            if mcap and not pd.isna(mcap):
                 st.markdown(
-                    f"<p style='margin:4px 0; font-size:0.75rem;'>{extras}</p>",
+                    f"<p style='margin:4px 0; font-size:0.75rem;'>💰 MCap: {_format_mcap(mcap)}</p>",
                     unsafe_allow_html=True,
                 )
         else:
@@ -564,16 +606,12 @@ def _render_company_card(row: pd.Series, index: int):
         m1, m2, m3 = st.columns(3)
         with m1:
             st.markdown(
-                f"<div style='text-align:center;'><p style='margin:0; font-size:0.75rem; color:#9ca3af;'>M-Score</p><p style='margin:2px 0; font-size:1rem; font-weight:600;'>{_format_metric(row.get('m_score'))}</p></div>",
+                f"<div style='text-align:center;'><p style='margin:0; font-size:0.75rem; color:#9ca3af;'>PE</p><p style='margin:2px 0; font-size:1rem; font-weight:600;'>{_format_metric(row.get('pe'))}</p></div>",
                 unsafe_allow_html=True,
             )
         with m2:
-            # Highlight TTM PE based on comparison with sector
-            pe_val, pe_color = _format_pe_with_highlight(
-                row.get("ttm_pe"), row.get("sector_pe"), row.get("pe_vs_sector_pct")
-            )
             st.markdown(
-                f"<div style='text-align:center;'><p style='margin:0; font-size:0.75rem; color:#9ca3af;'>TTM PE</p><p style='margin:2px 0; font-size:1rem; font-weight:600; color:{pe_color};'>{pe_val}</p></div>",
+                f"<div style='text-align:center;'><p style='margin:0; font-size:0.75rem; color:#9ca3af;'>P/B</p><p style='margin:2px 0; font-size:1rem; font-weight:600;'>{_format_metric(row.get('pb'))}</p></div>",
                 unsafe_allow_html=True,
             )
         with m3:
@@ -584,17 +622,55 @@ def _render_company_card(row: pd.Series, index: int):
 
         st.divider()
 
+        # Extra Metrics Grid
+        e1, e2, e3 = st.columns(3)
+        with e1:
+            pe_sec_ratio = row.get("pe_sec_pe_ratio")
+            val_str = _format_metric(pe_sec_ratio)
+            color = "#f59e0b"  # Amber
+            if pe_sec_ratio is not None and not pd.isna(pe_sec_ratio):
+                if float(pe_sec_ratio) < 1.0:
+                    color = "#22c55e"  # Green
+                elif float(pe_sec_ratio) > 1.2:
+                    color = "#ef4444"  # Red
+
+            st.markdown(
+                f"<div style='text-align:center;'><p style='margin:0; font-size:0.7rem; color:#9ca3af;'>PE / Sec PE</p><p style='margin:2px 0; font-size:0.9rem; font-weight:600; color:{color};'>{val_str}</p></div>",
+                unsafe_allow_html=True,
+            )
+        with e2:
+            curr_rto = row.get("current_rto")
+            val_str = _format_metric(curr_rto)
+            color = "#f59e0b"  # Amber
+            if curr_rto is not None and not pd.isna(curr_rto):
+                if float(curr_rto) > 1.5:
+                    color = "#22c55e"  # Green
+                elif float(curr_rto) < 1.0:
+                    color = "#ef4444"  # Red
+
+            st.markdown(
+                f"<div style='text-align:center;'><p style='margin:0; font-size:0.7rem; color:#9ca3af;'>Curr Ratio</p><p style='margin:2px 0; font-size:0.9rem; font-weight:600; color:{color};'>{val_str}</p></div>",
+                unsafe_allow_html=True,
+            )
+        with e3:
+            sector_pe = row.get("ind__pe")
+            st.markdown(
+                f"<div style='text-align:center;'><p style='margin:0; font-size:0.7rem; color:#9ca3af;'>Sec PE</p><p style='margin:2px 0; font-size:0.9rem; font-weight:600;'>{_format_metric(sector_pe)}</p></div>",
+                unsafe_allow_html=True,
+            )
+
+        st.divider()
+
         # Actions
         btn1, btn2 = st.columns(2, gap="small")
         with btn1:
-            # Open in new tab using link_button with local page
-            sc_id = str(row.get("scId", ""))
-            if sc_id:
-                detail_url = f"/Money_Control_Company_Details?sc_id={sc_id}"
+            sid = str(row.get("sid", ""))
+            if sid and sid not in ["nan", "None", ""]:
+                detail_url = f"/ScanX_Company_Details?sid={sid}"
                 st.link_button("📊 Details", detail_url, width="stretch")
         with btn2:
-            if row.get("company_url"):
-                st.link_button("🔗 MC", row.get("company_url"), width="stretch")
+            if row.get("url"):
+                st.link_button("🔗 ScanX", row.get("url"), width="stretch")
 
 
 # ============================================
@@ -604,64 +680,44 @@ def main():
     _init_session_state()
 
     # Ensure data source is available (fallback initialization)
-    if not ensure_data_source("money_control"):
+    if not ensure_data_source(DATA_SOURCE_NAME):
         st.error("❌ Failed to initialize data source. Please check your settings.")
         return
 
     # Header
-    st.markdown("# 📈 Money Control Market Overview")
+    st.markdown("# 📊 ScanX Trade Market Overview")
 
     # Load data
-    source = DataSourceRegistry.get("money_control")
+    source = DataSourceRegistry.get(DATA_SOURCE_NAME)
     if not source:
         st.error("❌ Data source not configured. Please check your settings.")
         return
 
     with st.spinner("Loading data..."):
-        df = load_cached_data("money_control", source)
+        df = load_cached_data(DATA_SOURCE_NAME, source)
 
     if df.empty:
         st.warning("📭 No data available. Please check the data source.")
         return
 
-    # --- Handle duplicate TTM column ---
-    # If there are multiple 'ttm' columns, keep only the last one
-    if "ttm" in df.columns:
-        # DataFrame already has ttm column from data processing
-        pass
-    else:
-        # Check if raw data has multiple TTM columns
-        ttm_cols = [col for col in df.columns if col.lower() == "ttm"]
-        if len(ttm_cols) > 1:
-            # Keep the last TTM column and rename it
-            df["ttm"] = df[ttm_cols[-1]]
-            # Drop other TTM columns
-            df = df.drop(columns=ttm_cols)
-
     # --- Calculate New Columns ---
-    # Ensure numeric columns are actually numeric (clean strings like ₹, etc.)
-    for col in ["p/b", "ttm_pe", "sector_pe", "ttm_eps", "cost"]:
-        if col in df.columns:
-            # If it's already numeric, just ensure it's float
-            if pd.api.types.is_numeric_dtype(df[col]):
-                df[col] = df[col].astype(float)
-            else:
-                # Clean strings: remove everything except numbers, dots, and minus signs
-                df[col] = df[col].astype(str).str.replace(r"[^\d.-]", "", regex=True)
-                df[col] = pd.to_numeric(df[col], errors="coerce")
+    # PE vs Sector PE %
+    if "pe" in df.columns and "ind__pe" in df.columns:
+        df["pe_vs_sector_pct"] = df.apply(
+            lambda x: (
+                ((x["pe"] - x["ind__pe"]) / x["ind__pe"] * 100)
+                if pd.notna(x["pe"]) and pd.notna(x["ind__pe"]) and x["ind__pe"] != 0
+                else None
+            ),
+            axis=1,
+        )
 
-    # PB vs Sector PB % (calculate if not already present)
-    if (
-        "p/b" in df.columns
-        and "sector_p_b" in df.columns
-        and "pb_vs_sector_pct" not in df.columns
-    ):
+    # PB vs Sector PB %
+    if "pb" in df.columns and "ind__pb" in df.columns:
         df["pb_vs_sector_pct"] = df.apply(
             lambda x: (
-                ((x["p/b"] - x["sector_p_b"]) / x["sector_p_b"] * 100)
-                if pd.notna(x["p/b"])
-                and pd.notna(x["sector_p_b"])
-                and x["sector_p_b"] != 0
+                ((x["pb"] - x["ind__pb"]) / x["ind__pb"] * 100)
+                if pd.notna(x["pb"]) and pd.notna(x["ind__pb"]) and x["ind__pb"] != 0
                 else None
             ),
             axis=1,
@@ -699,6 +755,7 @@ def main():
             ["📋 Table", "🃏 Cards"],
             horizontal=True,
             label_visibility="collapsed",
+            key="scanx_view_mode",
         )
 
     with col2:
@@ -706,9 +763,10 @@ def main():
         st.download_button(
             "📥 Export CSV",
             data=csv,
-            file_name=f"stocks_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
+            file_name=f"scanx_stocks_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
             mime="text/csv",
             width="stretch",
+            key="scanx_export_csv",
         )
 
     st.markdown("---")
