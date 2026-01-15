@@ -40,15 +40,18 @@ tracking company performance, and making informed investment decisions.
 
 ---
 
-### 📊 Available Features
-
+### 📊 Money Control Reports
 | Feature | Description |
 |---------|-------------|
-| **MC Market Overview** | Browse and filter Money Control companies with advanced search and export capabilities |
-| **MC Company Details** | Detailed analysis including financials, metrics, and analyst ratings from Money Control |
-| **MC Corporate Events** | Track upcoming stock splits, dividends, and bonus issues from Money Control |
-| **ScanX Market Overview** | Browse and filter ScanX Trade companies with market cap, PE, and sector filters |
-| **ScanX Company Details** | Detailed company view with sector comparisons and analyst ratings from ScanX Trade |
+| **📈 Market Overview** | Browse, filter, and sort companies with calculated PE/PB vs Sector % metrics. |
+| **🏢 Company Details** | Comprehensive analysis including financials, strengths, and analyst ratings. |
+| **📅 Corporate Events** | Track upcoming stock splits, dividends, and bonus issues. |
+
+### 🔍 ScanX Trade Reports
+| Feature | Description |
+|---------|-------------|
+| **📊 Market Overview** | Advanced screener for ScanX companies with Market Cap and Sector PE/PB filters. |
+| **🏛️ Company Details** | Detailed company view with sector comparisons and analyst insights. |
 
 ---
 

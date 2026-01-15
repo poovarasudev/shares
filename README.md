@@ -22,62 +22,31 @@ A comprehensive Streamlit-based stock analysis application that aggregates data 
 
 ## ✨ Features
 
-### 📊 Market Overview
-- **Comprehensive Data Table**: View all tracked companies with sortable columns
-- **Column Visibility Controls**: Show/hide columns based on your needs
-  - Default visible: Company Name, Sector, Industry, Cost, M-Score, TTM PE, Analyst Rating
-  - Hidden by default: SC ID, Status, TTM EPS, P/B, Sector PE, Analyst Count, PE vs Sector %, Analyst Confidence
-- **Advanced Filtering**:
-  - Text search by company name or SC ID
-  - Multi-select category filters (Sector, Industry, Status)
-  - Numeric range sliders (M-Score, PE Ratio)
-  - Result count display
-  - One-click filter reset
-- **Smart Sorting**: Dual dropdowns for column selection and sort order
-  - Choose from 14+ sortable columns (Company Name, M-Score, Cost, PE vs Sector %, TTM PE, TTM EPS, P/B, Analyst Rating, etc.)
-  - Toggle between ascending (↑) and descending (↓) order
-- **Pagination**: Navigate through large datasets efficiently (15 items per page)
-- **Multiple View Modes**: Switch between Table and Card views
-- **PE Value Highlighting**: Automatic color coding for PE values
-  - 🟢 Green: Undervalued (PE ≥20% cheaper than sector)
-  - 🟡 Amber: Fair valuation (within sector range)
-  - 🔴 Red: Overvalued (PE ≥20% more expensive than sector)
-  - PE vs Sector % with colored indicators in card view
-- **Data Export**: Download filtered results as CSV
+### 📊 Money Control Reports
 
-### 🏢 Company Details
-- **Comprehensive Company Profile**:
-  - Real-time price with change indicators
-  - 6 key financial metrics (M-Score, Cost, TTM EPS, TTM PE, P/B, Sector PE)
-  - Company strengths analysis
-  - Seasonality analysis with data tables
-  - Analyst ratings breakdown with distribution charts
-- **Navigation**: Quick back button to market overview
-- **Deep Linking**: Shareable URLs for specific companies
+- **Enhanced Market Overview**:
+  - **New Columns**: P/B, TTM, Sector P/B, and Sector PE now fully supported.
+  - **Calculated Metrics**: Automatic computation of **PE vs Sector %** and **PB vs Sector %**.
+  - **Smart Data Cleaning**: Robust cleaning of currency symbols (₹) and non-numeric strings.
+- **Detailed Company Profiles**: 10+ financial metrics, strengths, and seasonality analysis.
+- **Corporate Events**: Track upcoming splits, dividends, and bonus issues.
 
-### 📅 Corporate Events
-- **Event Tracking**: Monitor upcoming stock splits, dividends, and bonus issues
-- **Smart Filtering**:
-  - Filter by event type (Splits, Dividend, Bonus)
-  - Date range filters (Today, This Week, This Month, Next 3 Months, Past)
-  - Search by stock name or SC ID
-  - Notification status filter
-- **Visual Dashboard**:
-  - Color-coded event cards by type
-  - Status badges showing days until event
-  - Price information with change indicators
-  - Detailed event descriptions
-- **Multiple Views**: Switch between Cards and Table view
-- **Date Intelligence**: Automatic calculation of days until event
-- **Pagination**: Navigate through large event lists (20 items per page)
-- **Data Export**: Download filtered events as CSV
+### 🔍 ScanX Trade Reports
 
-### 🔌 Modular Data Sources
-- **Google Sheets Integration**: Public sheet CSV export with retry logic
-- **Extensible Architecture**: Easy addition of new sources
-  - Database connectors (PostgreSQL, MySQL, SQLite)
-  - REST API integrations
-  - File imports (CSV, Excel, JSON)
+- **Advanced Market Screener**:
+  - **Comprehensive Data**: LTP, Change %, PE, P/B, Market Cap (Cr), and Sector metrics.
+  - **Valuation Analysis**: Custom calculations for PE vs Sector PE % and PB vs Sector PB %.
+  - **Power Filters**: Filter by Market Cap range, Current Ratio, and Analyst consensus.
+- **Interactive Details**: Sector comparison charts and analyst rating distributions.
+
+### 🚀 Platform Highlights
+
+- **Dynamic Filtering**: Robust sidebar with multi-select and full-length range sliders.
+- **Flexible Views**: Toggle between high-density **Table** and visual **Card** views.
+- **Valuation Highlighting**: Automatic color-coding for undervalued (🟢) and overvalued (🔴) stocks.
+- **Dual Sorting**: Choose any column and sort direction (↑/↓) independently.
+- **Optimized Caching**: 1-day (24h) cache TTL for stability, with manual refresh override.
+- **One-Click Export**: Download any report results as clean CSV files.
 - **Centralized Registry**: Manage multiple data sources from one place
 - **Smart Caching**: 15-minute TTL with manual refresh option
 
@@ -120,38 +89,44 @@ A comprehensive Streamlit-based stock analysis application that aggregates data 
 ### Setup Instructions
 
 1. **Clone the repository**
+
    ```bash
    git clone <repository-url>
    cd shares
    ```
 
 2. **Create and activate virtual environment**
+
    ```bash
    python -m venv .venv
-   
+
    # On macOS/Linux:
    source .venv/bin/activate
-   
+
    # On Windows:
    .venv\Scripts\activate
    ```
 
 3. **Install dependencies**
+
    ```bash
    pip install -r requirements.txt
    ```
 
 4. **Set up environment variables**
+
    ```bash
    cp .env.example .env
    ```
-   
+
    Edit `.env` and add your configuration:
+
    ```env
    STOCK_GOOGLE_SHEET_URL=your_google_sheets_url_here
    ```
 
 5. **Run the application**
+
    ```bash
    streamlit run app.py
    ```
@@ -210,7 +185,7 @@ streamlit run app.py --server.address 0.0.0.0
 ### Basic Workflow
 
 1. **Home Page**: Overview of available reports and data sources
-2. **Market Overview**: 
+2. **Market Overview**:
    - Use filters in sidebar to narrow down companies
    - Configure visible columns using the "Configure Columns" expander
    - Sort data using the sort dropdown
@@ -239,9 +214,11 @@ shares/
 ├── app.py                          # Main entry point (landing page)
 │
 ├── pages/                          # Streamlit multipage structure
-│   ├── 1_📈_Market_Overview.py    # Stock list with filters & sorting
-│   ├── 2_🏢_Company_Details.py    # Company detail view
-│   └── 3_📅_Events.py              # Corporate events dashboard
+│   ├── 1_📈_MC_Market_Overview.py  # Money Control Stock list
+│   ├── 2_🏢_MC_Company_Details.py  # Money Control Detail view
+│   ├── 3_📅_MC_Events.py           # Corporate events dashboard
+│   ├── 4_📊_ScanX_Market_Overview.py # ScanX Trade Stock list
+│   └── 5_🏛️_ScanX_Company_Details.py # ScanX Trade Detail view
 │
 ├── data_sources/                   # Modular data source handlers
 │   ├── __init__.py                 # Module exports
@@ -275,11 +252,11 @@ import pandas as pd
 
 class DatabaseSource(DataSourceBase):
     """Data source for SQL databases."""
-    
+
     def __init__(self, config: DataSourceConfig):
         super().__init__(config)
         self.connection_string = config.connection_params.get('connection_string')
-    
+
     def connect(self) -> bool:
         """Establish database connection."""
         try:
@@ -287,11 +264,11 @@ class DatabaseSource(DataSourceBase):
             return True
         except Exception as e:
             return False
-    
+
     def fetch_data(self) -> pd.DataFrame:
         """Fetch data from database."""
         query = """
-            SELECT * FROM stocks 
+            SELECT * FROM stocks
             WHERE status = 'active'
         """
         # Execute query and return DataFrame
@@ -308,7 +285,7 @@ from data_sources.database import DatabaseSource
 @st.cache_resource
 def init_data_sources():
     # Existing Google Sheets source...
-    
+
     # Add new database source
     db_config = DataSourceConfig(
         name="my_database",
@@ -322,7 +299,7 @@ def init_data_sources():
     )
     db_source = DatabaseSource(db_config)
     DataSourceRegistry.register("my_database", db_source)
-    
+
     return True
 ```
 
@@ -347,12 +324,14 @@ Derived columns are computed metrics that add analytical value to your data. The
 ### Available Processors
 
 **`compute_pe_vs_sector(df)`**: Compares company PE ratio against sector average
+
 - **Adds columns**:
   - `pe_vs_sector_pct`: Percentage difference (-20% = 20% cheaper than sector)
   - `pe_vs_sector_flag`: Categorical label (Cheap/Fair/Expensive/Unknown)
 - **Used for**: Identifying undervalued or overvalued companies
 
 **`compute_analyst_confidence(df)`**: Calculates analyst consensus strength
+
 - **Adds columns**:
   - `analyst_confidence_score`: Numeric 0-100 score combining count + rating
   - `analyst_confidence`: Bucket label (High/Medium/Low/Unknown)
@@ -407,18 +386,18 @@ from typing import Optional
 def my_custom_processor(df: pd.DataFrame) -> pd.DataFrame:
     """
     Add custom derived columns to the DataFrame.
-    
+
     Args:
         df: Input DataFrame
-        
+
     Returns:
         DataFrame with new columns added
     """
     df = df.copy()  # Always work on a copy
-    
+
     # Example: Add a simple metric
     df['my_metric'] = df['cost'] * df['m_score']
-    
+
     return df
 
 # Use it in a data source
@@ -494,11 +473,11 @@ pytest --cov=. --cov-report=html
 1. Create a new file in `pages/` with the format: `N_emoji_Page_Name.py`
    - `N` is the order number (3, 4, 5...)
    - Emoji is optional but recommended for visual appeal
-   
 2. Add page configuration:
+
    ```python
    import streamlit as st
-   
+
    st.set_page_config(
        page_title="My Page",
        page_icon="📊",
@@ -513,6 +492,7 @@ pytest --cov=. --cov-report=html
 ### Sorting in Market Overview
 
 The Market Overview uses a dual-dropdown sorting interface:
+
 - **Column Dropdown**: Select which column to sort by (14+ options)
 - **Direction Dropdown**: Toggle between ↑ Ascending and ↓ Descending
 
@@ -523,22 +503,26 @@ This is more intuitive than a single combined dropdown and allows quick directio
 ### Common Issues
 
 #### Navigation not showing in sidebar
+
 - Ensure pages are in the `pages/` folder
 - Check that page files follow the naming convention: `N_emoji_Name.py`
 - Restart the Streamlit server
 
 #### Data not loading
+
 - Check `.env` file exists and has correct values
 - Verify Google Sheet is publicly accessible
 - Check terminal for error messages
 - Use "Refresh Data" button in sidebar
 
 #### Import errors
+
 - Ensure virtual environment is activated
 - Reinstall dependencies: `pip install -r requirements.txt`
 - Check Python version: `python --version` (should be 3.9+)
 
 #### Cache issues
+
 - Clear cache manually: Use "Refresh Data" button
 - Clear Streamlit cache: Press 'C' in the browser
 - Restart the application
@@ -593,6 +577,7 @@ CMD ["streamlit", "run", "app.py"]
 ```
 
 Build and run:
+
 ```bash
 docker build -t stock-analyzer .
 docker run -p 8501:8501 stock-analyzer
@@ -622,7 +607,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 👥 Authors
 
-- **Your Name** - *Initial work* - [GitHub Profile](https://github.com/yourusername)
+- **Your Name** - _Initial work_ - [GitHub Profile](https://github.com/yourusername)
 
 ## 🙏 Acknowledgments
 
@@ -637,6 +622,7 @@ For support, email support@example.com or open an issue in the GitHub repository
 ## 🗺 Roadmap
 
 ### Version 2.0 (Q2 2026)
+
 - [ ] Real-time data updates via WebSocket
 - [ ] Portfolio tracking and management
 - [ ] Advanced stock screener with custom filters
@@ -644,12 +630,14 @@ For support, email support@example.com or open an issue in the GitHub repository
 - [ ] Multi-language support
 
 ### Version 2.1 (Q3 2026)
+
 - [ ] Machine learning price predictions
 - [ ] Technical analysis indicators
 - [ ] Comparison tool for multiple stocks
 - [ ] Export reports as PDF
 
 ### Future Enhancements
+
 - [ ] Mobile app (React Native)
 - [ ] API for third-party integrations
 - [ ] Social features (share analysis, comments)
